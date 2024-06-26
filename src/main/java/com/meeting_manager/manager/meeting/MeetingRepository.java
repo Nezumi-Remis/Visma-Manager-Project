@@ -8,6 +8,8 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 
+import com.meeting_manager.manager.users.MeetingAttendeeEntity;
+
 import jakarta.annotation.PostConstruct;
 
 @Repository
@@ -37,6 +39,12 @@ public class MeetingRepository {
 
     public void delete(String name) {
         meetings.removeIf(meeting -> meeting.name().equals(name));
+    }
+
+    public void saveMeetingAttendee(MeetingAttendeeEntity meetingAttendee) {
+        // You need to implement the logic to save the meeting attendee
+        // For example, you can add the attendee to a meeting
+        // meetings.get(0).addAttendee(meetingAttendee); // Replace 0 with the actual meeting index
     }
 
     @PostConstruct

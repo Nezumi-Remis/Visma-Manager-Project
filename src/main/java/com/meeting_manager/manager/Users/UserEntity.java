@@ -1,4 +1,4 @@
-package com.meeting_manager.manager.Users;
+package com.meeting_manager.manager.users;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;

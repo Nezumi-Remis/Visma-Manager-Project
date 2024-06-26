@@ -2,6 +2,8 @@ package com.meeting_manager.manager.meeting;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,6 +19,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+
+import com.meeting_manager.manager.users.MeetingAttendeeEntity;
+import com.meeting_manager.manager.users.MeetingEntity;
+import com.meeting_manager.manager.users.UserEntity;
+import com.meeting_manager.manager.users.UserRepository;
 
 import jakarta.validation.Valid;
 
@@ -61,4 +68,22 @@ public class MeetingController {
         meetingRepository.delete(name);
     }
 
+    @Autowired
+    private UserRepository userRepository;
+    
+    @PostMapping("/{name}/attendees")
+    public void addAttendee(@PathVariable String name, @RequestBody UserEntity attendee) {
+        Optional<Meeting> meetingOptional = meetingRepository.findByName(URLDecoder.decode(name, StandardCharsets.UTF_8));
+        if (meetingOptional.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Meeting not found");
+        }
+        Meeting meeting = meetingOptional.get();
+        MeetingEntity meetingEntity = new MeetingEntity(); // assuming you have a constructor or a way to convert Meeting to MeetingEntity
+        meetingEntity.setName(meeting.name()); // set the name and other properties
+        MeetingAttendeeEntity meetingAttendee = new MeetingAttendeeEntity();
+        meetingAttendee.setMeeting(meetingEntity);
+        meetingAttendee.setAttendee(attendee);
+        meetingAttendee.setAddedAt(Timestamp.valueOf(LocalDateTime.now()));
+        meetingRepository.saveMeetingAttendee(meetingAttendee);
+    }
 }

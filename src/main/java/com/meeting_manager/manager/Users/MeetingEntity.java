@@ -12,6 +12,8 @@ import javax.persistence.OneToMany;
 import javax.persistence.CascadeType;
 import java.time.LocalDate;
 import java.util.List;
+
+import com.meeting_manager.manager.meeting.Meeting;
 import com.meeting_manager.manager.meeting.MeetingCategory;
 import com.meeting_manager.manager.meeting.MeetingType;
 
@@ -33,6 +35,20 @@ public class MeetingEntity {
     private UserEntity responsiblePerson;
     @OneToMany(mappedBy = "meeting", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MeetingAttendeeEntity> attendees;
+
+    public MeetingEntity() {}
+
+    public MeetingEntity(Meeting meeting) {
+        this.name = meeting.name();
+        this.description = meeting.description();
+        this.category = meeting.category();
+        this.type = meeting.type();
+        this.startDate = meeting.startDate();
+        this.endDate = meeting.endDate();
+        // You need to convert the responsible person's name to a UserEntity
+        // For example, you could have a UserRepository to find the user by name
+        // this.responsiblePerson = userRepository.findByName(meeting.responsiblePerson());
+    }
 
     public Long getId() {
         return id;

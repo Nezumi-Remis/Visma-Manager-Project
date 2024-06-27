@@ -3,6 +3,7 @@ package com.meeting_manager.manager.meeting;
 import java.time.LocalDate;
 
 public class MeetingFilter {
+    private String name;
     private String description;
     private String responsiblePerson;
     private MeetingCategory category;
@@ -13,6 +14,14 @@ public class MeetingFilter {
     private Integer attendeesTo;
 
     public MeetingFilter() {}
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
 
     public String getDescription() {
         return description;

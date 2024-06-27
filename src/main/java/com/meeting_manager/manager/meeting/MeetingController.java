@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +26,6 @@ import com.meeting_manager.manager.users.MeetingAttendeeEntity;
 import com.meeting_manager.manager.users.MeetingEntity;
 import com.meeting_manager.manager.users.UserEntity;
 import com.meeting_manager.manager.users.UserRepository;
-import com.meeting_manager.manager.meeting.MeetingFilter;
 
 import jakarta.validation.Valid;
 
@@ -121,12 +121,17 @@ public class MeetingController {
     }
 
     @PostMapping("/filter")
-    public ResponseEntity<List<Meeting>> filterMeetings(@RequestBody MeetingFilter filter) {
+    public ResponseEntity<List<Meeting>> filterMeetings(@RequestBody String name) {
+        MeetingFilter filter = new MeetingFilter();
+        filter.setName(name);
         List<MeetingEntity> meetingEntities = meetingRepository.findMeetingEntitiesByFilter(filter);
-        List<Meeting> meetings = new ArrayList<>();
-        for (MeetingEntity meetingEntity : meetingEntities) {
-            meetings.add(Meeting.fromMeetingEntity(meetingEntity, userRepository));
+        List<Meeting> meetings = meetingEntities.stream()
+                .map(meetingEntity -> Meeting.fromMeetingEntity(meetingEntity, userRepository))
+                .collect(Collectors.toList());
+        if (meetings.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        } else {
+            return ResponseEntity.ok(meetings);
         }
-        return ResponseEntity.ok(meetings);
     }
 }

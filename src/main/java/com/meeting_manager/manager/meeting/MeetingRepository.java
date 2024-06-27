@@ -2,7 +2,6 @@ package com.meeting_manager.manager.meeting;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -40,26 +39,30 @@ public class MeetingRepository {
 
     private List<MeetingEntity> meetingEntities = new ArrayList<>();
 
-    public void create(Meeting meeting) {
+    public Meeting create(Meeting meeting) {
         MeetingEntity meetingEntity = MeetingEntity.fromMeeting(meeting, userRepository);
         meetingEntities.add(meetingEntity);
         meetings.add(meeting);
+        return meeting;
     }
 
     public List<MeetingEntity> findAllMeetingEntities() {
         return meetingEntities;
     }
 
-    public void update(Meeting meeting, String name) {
+    public Meeting update(Meeting meeting, String name) {
         Optional<Meeting> existingMeeting = findByName(name);
         if(existingMeeting.isPresent()) {
             int index = meetings.indexOf(existingMeeting.get());
             meetings.set(index, meeting);
+            return meeting;
         }
+        return null;
     }
 
-    public void delete(String name) {
-        meetings.removeIf(meeting -> meeting.name().equals(name));
+    public boolean delete(String name) {
+        boolean deleted = meetings.removeIf(meeting -> meeting.name().equals(name));
+        return deleted;
     }
 
     public void saveMeetingAttendee(MeetingAttendeeEntity meetingAttendee) {
@@ -75,7 +78,7 @@ public class MeetingRepository {
     @PostConstruct
     public void init() {
         UserEntity attendee = new UserEntity();
-        attendee.setName("Some Name"); // Set the name field
+        attendee.setName("Some Name");
         userRepository.saveUser(attendee);
         
         Meeting meeting = new Meeting("Sample Meeting", "Responsible Person", "This is a sample meeting", MeetingCategory.CodeMonkey, MeetingType.Live, LocalDate.now(), LocalDate.now().plusDays(1), List.of(new MeetingAttendeeEntity(attendee)));
@@ -97,7 +100,7 @@ public class MeetingRepository {
              .collect(Collectors.toList());
         return new Meeting(
             meetingEntity.getName(),
-            meetingEntity.getResponsiblePerson().getName(), // assuming responsiblePerson is a UserEntity
+            meetingEntity.getResponsiblePerson().getName(),
             meetingEntity.getDescription(),
             meetingEntity.getCategory(),
             meetingEntity.getType(),
@@ -109,59 +112,47 @@ public class MeetingRepository {
 
 
 
-    public List<Meeting> filterMeetings(MeetingFilter filter) {
-        List<Meeting> meetings = findAll();
+    public List<MeetingEntity> findMeetingEntitiesByFilter(MeetingFilter filter) {
+        List<MeetingEntity> meetingEntities = findAllMeetingEntities();
         if (filter.getName()!= null) {
-            meetings = meetings.stream()
-                 .filter(meeting -> Arrays.stream(meeting.name().toLowerCase().split("\\s+"))
-                         .anyMatch(word -> word.contains(filter.getName().toLowerCase())))
-                 .collect(Collectors.toList());
+            meetingEntities = meetingEntities.stream()
+                   .filter(meetingEntity -> meetingEntity.getName().toLowerCase().contains(filter.getName().toLowerCase()))
+                   .collect(Collectors.toList());
         }
         if (filter.getDescription()!= null) {
-            meetings = meetings.stream()
-                 .filter(meeting -> Arrays.stream(meeting.description().toLowerCase().split("\\s+"))
-                         .anyMatch(word -> word.contains(filter.getDescription().toLowerCase())))
-                 .collect(Collectors.toList());
+            meetingEntities = meetingEntities.stream()
+                   .filter(meetingEntity -> meetingEntity.getDescription().toLowerCase().contains(filter.getDescription().toLowerCase()))
+                   .collect(Collectors.toList());
         }
         if (filter.getResponsiblePerson()!= null) {
-            meetings = meetings.stream()
-                 .filter(meeting -> meeting.responsiblePerson().equals(filter.getResponsiblePerson()))
-                 .collect(Collectors.toList());
+            meetingEntities = meetingEntities.stream()
+                   .filter(meetingEntity -> meetingEntity.getResponsiblePerson().getName().equals(filter.getResponsiblePerson()))
+                   .collect(Collectors.toList());
         }
         if (filter.getCategory()!= null) {
-            meetings = meetings.stream()
-                 .filter(meeting -> meeting.category() == filter.getCategory())
-                 .collect(Collectors.toList());
+            meetingEntities = meetingEntities.stream()
+                   .filter(meetingEntity -> meetingEntity.getCategory() == filter.getCategory())
+                   .collect(Collectors.toList());
         }
         if (filter.getType()!= null) {
-            meetings = meetings.stream()
-                 .filter(meeting -> meeting.type() == filter.getType())
-                 .collect(Collectors.toList());
+            meetingEntities = meetingEntities.stream()
+                   .filter(meetingEntity -> meetingEntity.getType() == filter.getType())
+                   .collect(Collectors.toList());
         }
         if (filter.getStartDateFrom()!= null && filter.getStartDateTo()!= null) {
-            meetings = meetings.stream()
-                 .filter(meeting -> meeting.startDate().isAfter(filter.getStartDateFrom()) || meeting.startDate().isEqual(filter.getStartDateFrom()))
-                 .filter(meeting -> meeting.startDate().isBefore(filter.getStartDateTo()) || meeting.startDate().isEqual(filter.getStartDateTo()))
-                 .collect(Collectors.toList());
+            meetingEntities = meetingEntities.stream()
+                   .filter(meetingEntity -> meetingEntity.getStartDate().isAfter(filter.getStartDateFrom()) || meetingEntity.getStartDate().isEqual(filter.getStartDateFrom()))
+                   .filter(meetingEntity -> meetingEntity.getStartDate().isBefore(filter.getStartDateTo()) || meetingEntity.getStartDate().isEqual(filter.getStartDateTo()))
+                   .collect(Collectors.toList());
         } else if (filter.getStartDateFrom()!= null) {
-            meetings = meetings.stream()
-                 .filter(meeting -> meeting.startDate().isAfter(filter.getStartDateFrom()) || meeting.startDate().isEqual(filter.getStartDateFrom()))
-                 .collect(Collectors.toList());
+            meetingEntities = meetingEntities.stream()
+                   .filter(meetingEntity -> meetingEntity.getStartDate().isAfter(filter.getStartDateFrom()) || meetingEntity.getStartDate().isEqual(filter.getStartDateFrom()))
+                   .collect(Collectors.toList());
         } else if (filter.getStartDateTo()!= null) {
-            meetings = meetings.stream()
-                 .filter(meeting -> meeting.startDate().isBefore(filter.getStartDateTo()) || meeting.startDate().isEqual(filter.getStartDateTo()))
-                 .collect(Collectors.toList());
+            meetingEntities = meetingEntities.stream()
+                   .filter(meetingEntity -> meetingEntity.getStartDate().isBefore(filter.getStartDateTo()) || meetingEntity.getStartDate().isEqual(filter.getStartDateTo()))
+                   .collect(Collectors.toList());
         }
-        if (filter.getAttendeesFrom()!= null) {
-            meetings = meetings.stream()
-                 .filter(meeting -> meeting.getAttendees().size() >= filter.getAttendeesFrom())
-                 .collect(Collectors.toList());
-        }
-        if (filter.getAttendeesTo()!= null) {
-            meetings = meetings.stream()
-                 .filter(meeting -> meeting.getAttendees().size() <= filter.getAttendeesTo())
-                 .collect(Collectors.toList());
-        }
-        return meetings;
+        return meetingEntities;
     }
 }

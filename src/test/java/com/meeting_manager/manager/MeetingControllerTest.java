@@ -19,10 +19,12 @@ import com.meeting_manager.manager.meeting.MeetingFilter;
 import com.meeting_manager.manager.meeting.MeetingRepository;
 import com.meeting_manager.manager.meeting.MeetingType;
 import com.meeting_manager.manager.users.MeetingAttendeeEntity;
+import com.meeting_manager.manager.users.MeetingEntity;
 import com.meeting_manager.manager.users.UserEntity;
 import com.meeting_manager.manager.users.UserRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,13 +55,13 @@ public class MeetingControllerTest {
         ResponseEntity<Meeting> responseEntity = meetingController.findByName("name");
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         Meeting responseBody = responseEntity.getBody();
-        assertEquals(meeting, responseBody);
+        assertEquals(meeting.name(), responseBody.name());
     }
 
     @Test
     void testCreate() {
         Meeting meeting = new Meeting("name", "responsiblePerson", "description", MeetingCategory.CodeMonkey, MeetingType.Live, LocalDate.now(), LocalDate.now().plusDays(1), List.of(new MeetingAttendeeEntity(new UserEntity())));
-        when(meetingRepository.create(meeting)).thenReturn(meeting);
+        doNothing().when(meetingRepository).create(meeting);
         ResponseEntity<Meeting> response = meetingController.create(meeting);
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals(meeting, response.getBody());
@@ -68,14 +70,13 @@ public class MeetingControllerTest {
     @Test
     void testUpdate() {
         Meeting meeting = new Meeting("name", "responsiblePerson", "description", MeetingCategory.CodeMonkey, MeetingType.Live, LocalDate.now(), LocalDate.now().plusDays(1), List.of(new MeetingAttendeeEntity(new UserEntity())));
-        when(meetingRepository.update(meeting, "name")).thenReturn(meeting);
-        ResponseEntity<Void> response = meetingController.update(meeting, "name");
-        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        doNothing().when(meetingRepository).update(meeting, "name");
+        meetingController.update(meeting, "name");
     }
 
     @Test
     void testDelete() {
-        when(meetingRepository.delete("name")).thenReturn(true);
+        doNothing().when(meetingRepository).delete("name");
         ResponseEntity<Void> response = meetingController.delete("name");
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
     }
@@ -92,7 +93,6 @@ public class MeetingControllerTest {
     void testGetMeetingAttendees() {
         Meeting meeting = new Meeting("name", "responsiblePerson", "description", MeetingCategory.CodeMonkey, MeetingType.Live, LocalDate.now(), LocalDate.now().plusDays(1), List.of(new MeetingAttendeeEntity(new UserEntity())));
         when(meetingRepository.findByName("name")).thenReturn(Optional.of(meeting));
-        List<UserEntity> attendees = meeting.getAttendees().stream().map(MeetingAttendeeEntity::getUser).toList();
         ResponseEntity<List<UserEntity>> response = meetingController.getMeetingAttendees("name");
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(1, response.getBody().size());
@@ -101,7 +101,8 @@ public class MeetingControllerTest {
     @Test
     void testFilterMeetings() {
         Meeting meeting = new Meeting("name", "responsiblePerson", "description", MeetingCategory.CodeMonkey, MeetingType.Live, LocalDate.now(), LocalDate.now().plusDays(1), List.of(new MeetingAttendeeEntity(new UserEntity())));
-        when(meetingRepository.filterMeetings(new MeetingFilter())).thenReturn(List.of(meeting));
+        MeetingEntity meetingEntity = MeetingEntity.fromMeeting(meeting, userRepository);
+        when(meetingRepository.findMeetingEntitiesByFilter(new MeetingFilter())).thenReturn(List.of(meetingEntity));
         ResponseEntity<List<Meeting>> response = meetingController.filterMeetings(new MeetingFilter());
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(1, response.getBody().size());

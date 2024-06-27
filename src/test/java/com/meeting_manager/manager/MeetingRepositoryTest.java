@@ -3,6 +3,7 @@ package com.meeting_manager.manager;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,10 +15,12 @@ import org.springframework.http.ResponseEntity;
 
 import com.meeting_manager.manager.meeting.Meeting;
 import com.meeting_manager.manager.meeting.MeetingCategory;
+import com.meeting_manager.manager.meeting.MeetingController;
 import com.meeting_manager.manager.meeting.MeetingFilter;
 import com.meeting_manager.manager.meeting.MeetingRepository;
 import com.meeting_manager.manager.meeting.MeetingType;
 import com.meeting_manager.manager.users.MeetingAttendeeEntity;
+import com.meeting_manager.manager.users.MeetingEntity;
 import com.meeting_manager.manager.users.UserEntity;
 import com.meeting_manager.manager.users.UserRepository;
 
@@ -32,6 +35,9 @@ public class MeetingRepositoryTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private MeetingController meetingController;
 
     @Test
     void testFindAll() {
@@ -73,11 +79,13 @@ public class MeetingRepositoryTest {
         assertEquals(true, response);
     }
 
-    @Test
-    void testFilterMeetings() {
-        Meeting meeting = new Meeting("name", "responsiblePerson", "description", MeetingCategory.CodeMonkey, MeetingType.Live, LocalDate.now(), LocalDate.now().plusDays(1), List.of(new MeetingAttendeeEntity(new UserEntity())));
-        when(meetingRepository.filterMeetings(new MeetingFilter())).thenReturn(List.of(meeting));
-        List<Meeting> response = meetingRepository.filterMeetings(new MeetingFilter());
-        assertEquals(1, response.size());
-    }
+@Test
+void testFilterMeetings() {
+    Meeting meeting = new Meeting("name", "responsiblePerson", "description", MeetingCategory.CodeMonkey, MeetingType.Live, LocalDate.now(), LocalDate.now().plusDays(1), List.of(new MeetingAttendeeEntity(new UserEntity())));
+    when(meetingRepository.findMeetingEntitiesByFilter(new MeetingFilter())).thenReturn(List.of(MeetingEntity.fromMeeting(meeting, userRepository)));
+    List<Meeting> response = meetingRepository.findMeetingEntitiesByFilter(new MeetingFilter()).stream()
+            .map(meetingEntity -> Meeting.fromMeetingEntity(meetingEntity, userRepository))
+            .collect(Collectors.toList());
+    assertEquals(1, response.size());
+}
 }

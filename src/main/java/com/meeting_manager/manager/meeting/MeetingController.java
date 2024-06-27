@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,71 +46,87 @@ public class MeetingController {
     }
 
     @GetMapping("/{name}")
-    public Meeting findByName(@PathVariable String name) {
+    public ResponseEntity<Meeting> findByName(@PathVariable String name) {
         Optional<Meeting> meeting = meetingRepository.findByName(URLDecoder.decode(name, StandardCharsets.UTF_8));
         if (meeting.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Meeting not found");
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        return meeting.get();
+        return new ResponseEntity<>(meeting.get(), HttpStatus.OK);
     }
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("")
-    public void create(@Valid @RequestBody Meeting meeting) {
+    public ResponseEntity<Meeting> create(@Valid @RequestBody Meeting meeting) {
         meetingRepository.create(meeting);
+        return new ResponseEntity<>(meeting, HttpStatus.CREATED);
     }
 
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PutMapping("/{name}")
-    public void update(@Valid @RequestBody Meeting meeting, @PathVariable String name) {
+    public ResponseEntity<Void> update(@Valid @RequestBody Meeting meeting, @PathVariable String name) {
         meetingRepository.update(meeting, name);
+        return ResponseEntity.noContent().build();
     }
 
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/{name}")
-    public void delete(@PathVariable String name) {
+    public ResponseEntity<Void> delete(@PathVariable String name) {
         meetingRepository.delete(name);
+        return ResponseEntity.noContent().build();
     }
     
     @PostMapping("/{name}/attendees")
-    public void addAttendee(@PathVariable String name, @RequestBody UserEntity attendee) {
-        Meeting meeting = findByName(name);
-        if (meeting!= null) {
-            MeetingEntity meetingEntity = MeetingEntity.fromMeeting(meeting, userRepository);
-            MeetingAttendeeEntity meetingAttendee = new MeetingAttendeeEntity(attendee);
-            meetingAttendee.setMeeting(meetingEntity);
-            meetingAttendee.setAddedAt(Timestamp.valueOf(LocalDateTime.now()));
-            
-            // Save the meetingAttendee to the database to generate the ID
-            meetingRepository.saveMeetingAttendee(meetingAttendee);
-            
-            // Update the meeting attendees
-            meeting.getAttendees().add(meetingAttendee);
-            meetingRepository.updateMeetingEntity(MeetingEntity.fromMeeting(meeting, userRepository));
-        } else {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Meeting not found");
-        }
-    }
-
-    @GetMapping("/{name}/attendees/list")
-    public List<UserEntity> getMeetingAttendees(@PathVariable String name) {
-        Meeting meeting = findByName(name);
-        if (meeting!= null) {
-            MeetingEntity meetingEntity = MeetingEntity.fromMeeting(meeting, userRepository);
-            List<MeetingAttendeeEntity> meetingAttendees = meetingRepository.findMeetingAttendeesByMeeting(meetingEntity);
-            List<UserEntity> attendees = new ArrayList<>();
-            for (MeetingAttendeeEntity meetingAttendee : meetingAttendees) {
-                attendees.add(meetingAttendee.getAttendee());
+    public ResponseEntity<Void> addAttendee(@PathVariable String name, @RequestBody UserEntity attendee) {
+        ResponseEntity<Meeting> response = findByName(name);
+        if (response.getStatusCode() == HttpStatus.OK) {
+            Meeting meeting = response.getBody();
+            if (meeting != null) {
+                MeetingEntity meetingEntity = MeetingEntity.fromMeeting(meeting, userRepository);
+                MeetingAttendeeEntity meetingAttendee = new MeetingAttendeeEntity(attendee);
+                meetingAttendee.setMeeting(meetingEntity);
+                meetingAttendee.setAddedAt(Timestamp.valueOf(LocalDateTime.now()));
+                
+                meetingRepository.saveMeetingAttendee(meetingAttendee);
+                
+                meeting.getAttendees().add(meetingAttendee);
+                meetingRepository.updateMeetingEntity(MeetingEntity.fromMeeting(meeting, userRepository));
+                return ResponseEntity.status(HttpStatus.CREATED).build();
+            } else {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Meeting not found");
             }
-            return attendees;
+        } else {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Meeting not found");
+        }
+    }
+    
+    @GetMapping("/{name}/attendees/list")
+    public ResponseEntity<List<UserEntity>> getMeetingAttendees(@PathVariable String name) {
+        ResponseEntity<Meeting> response = findByName(name);
+        if (response.getStatusCode() == HttpStatus.OK) {
+            Meeting meeting = response.getBody();
+            if (meeting!= null) {
+                MeetingEntity meetingEntity = MeetingEntity.fromMeeting(meeting, userRepository);
+                List<MeetingAttendeeEntity> meetingAttendees = meetingRepository.findMeetingAttendeesByMeeting(meetingEntity);
+                List<UserEntity> attendees = new ArrayList<>();
+                for (MeetingAttendeeEntity meetingAttendee : meetingAttendees) {
+                    attendees.add(meetingAttendee.getAttendee());
+                }
+                return ResponseEntity.ok(attendees);
+            } else {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Meeting not found");
+            }
         } else {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Meeting not found");
         }
     }
 
-
-    @GetMapping("/filter")
-    public List<Meeting> filterMeetings(@RequestBody MeetingFilter filter) {
-        return meetingRepository.filterMeetings(filter);
+    @PostMapping("/filter")
+    public ResponseEntity<List<Meeting>> filterMeetings(@RequestBody MeetingFilter filter) {
+        List<MeetingEntity> meetingEntities = meetingRepository.findMeetingEntitiesByFilter(filter);
+        List<Meeting> meetings = new ArrayList<>();
+        for (MeetingEntity meetingEntity : meetingEntities) {
+            meetings.add(Meeting.fromMeetingEntity(meetingEntity, userRepository));
+        }
+        return ResponseEntity.ok(meetings);
     }
 }

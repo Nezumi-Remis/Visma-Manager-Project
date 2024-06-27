@@ -48,7 +48,7 @@ public class MeetingEntity {
         meetingEntity.startDate = meeting.startDate();
         meetingEntity.endDate = meeting.endDate();
         meetingEntity.responsiblePerson = userRepository.findByName(meeting.responsiblePerson()).orElse(new UserEntity());
-        meetingEntity.attendees = meeting.attendees(); // Initialize attendees list
+        meetingEntity.attendees = meeting.attendees();
         return meetingEntity;
     }
 

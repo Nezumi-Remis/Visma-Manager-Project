@@ -24,6 +24,7 @@ import com.meeting_manager.manager.users.MeetingAttendeeEntity;
 import com.meeting_manager.manager.users.MeetingEntity;
 import com.meeting_manager.manager.users.UserEntity;
 import com.meeting_manager.manager.users.UserRepository;
+import com.meeting_manager.manager.meeting.MeetingFilter;
 
 import jakarta.validation.Valid;
 
@@ -104,5 +105,11 @@ public class MeetingController {
         } else {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Meeting not found");
         }
+    }
+
+
+    @GetMapping("/filter")
+    public List<Meeting> filterMeetings(@RequestBody MeetingFilter filter) {
+        return meetingRepository.filterMeetings(filter);
     }
 }

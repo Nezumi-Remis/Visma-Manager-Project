@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -120,18 +119,8 @@ public class MeetingController {
         }
     }
 
-    @PostMapping("/filter")
-    public ResponseEntity<List<Meeting>> filterMeetings(@RequestBody String name) {
-        MeetingFilter filter = new MeetingFilter();
-        filter.setName(name);
-        List<MeetingEntity> meetingEntities = meetingRepository.findMeetingEntitiesByFilter(filter);
-        List<Meeting> meetings = meetingEntities.stream()
-                .map(meetingEntity -> Meeting.fromMeetingEntity(meetingEntity, userRepository))
-                .collect(Collectors.toList());
-        if (meetings.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        } else {
-            return ResponseEntity.ok(meetings);
-        }
+    @GetMapping("/filter")
+    public List<Meeting> filterMeetings(@RequestBody MeetingFilter filter) {
+        return meetingRepository.filterMeetings(filter);
     }
 }

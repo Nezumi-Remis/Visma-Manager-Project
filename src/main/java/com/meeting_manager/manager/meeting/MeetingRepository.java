@@ -112,54 +112,53 @@ public class MeetingRepository {
 
 
 
-    public List<MeetingEntity> findMeetingEntitiesByFilter(MeetingFilter filter) {
-        List<MeetingEntity> meetingEntities = findAllMeetingEntities();
-        
+    public List<Meeting> filterMeetings(MeetingFilter filter) {
+        List<Meeting> meetings = findAll();
         if (filter.getName()!= null) {
-            meetingEntities = meetingEntities.stream()
-                 .filter(meetingEntity -> meetingEntity.getName().toLowerCase().contains(filter.getName().toLowerCase()))
-                 .collect(Collectors.toList());
+            meetings = meetings.stream()
+                   .filter(meeting -> meeting.name().toLowerCase().contains(filter.getName().toLowerCase()))
+                   .collect(Collectors.toList());
         }
-        
         if (filter.getDescription()!= null) {
-            meetingEntities = meetingEntities.stream()
-                 .filter(meetingEntity -> meetingEntity.getDescription().toLowerCase().contains(filter.getDescription().toLowerCase()))
-                 .collect(Collectors.toList());
+            meetings = meetings.stream()
+                   .filter(meeting -> meeting.description().toLowerCase().contains(filter.getDescription().toLowerCase()))
+                   .collect(Collectors.toList());
         }
-        
         if (filter.getResponsiblePerson()!= null) {
-            meetingEntities = meetingEntities.stream()
-                 .filter(meetingEntity -> meetingEntity.getResponsiblePerson().getName().equals(filter.getResponsiblePerson()))
-                 .collect(Collectors.toList());
+            meetings = meetings.stream()
+                   .filter(meeting -> meeting.responsiblePerson().equals(filter.getResponsiblePerson()))
+                   .collect(Collectors.toList());
         }
-        
         if (filter.getCategory()!= null) {
-            meetingEntities = meetingEntities.stream()
-                 .filter(meetingEntity -> meetingEntity.getCategory() == filter.getCategory())
-                 .collect(Collectors.toList());
+            meetings = meetings.stream()
+                   .filter(meeting -> meeting.category() == filter.getCategory())
+                   .collect(Collectors.toList());
         }
-        
         if (filter.getType()!= null) {
-            meetingEntities = meetingEntities.stream()
-                 .filter(meetingEntity -> meetingEntity.getType() == filter.getType())
-                 .collect(Collectors.toList());
+            meetings = meetings.stream()
+                   .filter(meeting -> meeting.type() == filter.getType())
+                   .collect(Collectors.toList());
         }
-        
-        if (filter.getStartDateFrom()!= null && filter.getStartDateTo()!= null) {
-            meetingEntities = meetingEntities.stream()
-                 .filter(meetingEntity -> meetingEntity.getStartDate().isAfter(filter.getStartDateFrom()) || meetingEntity.getStartDate().isEqual(filter.getStartDateFrom()))
-                 .filter(meetingEntity -> meetingEntity.getStartDate().isBefore(filter.getStartDateTo()) || meetingEntity.getStartDate().isEqual(filter.getStartDateTo()))
-                 .collect(Collectors.toList());
-        } else if (filter.getStartDateFrom()!= null) {
-            meetingEntities = meetingEntities.stream()
-                 .filter(meetingEntity -> meetingEntity.getStartDate().isAfter(filter.getStartDateFrom()) || meetingEntity.getStartDate().isEqual(filter.getStartDateFrom()))
-                 .collect(Collectors.toList());
-        } else if (filter.getStartDateTo()!= null) {
-            meetingEntities = meetingEntities.stream()
-                 .filter(meetingEntity -> meetingEntity.getStartDate().isBefore(filter.getStartDateTo()) || meetingEntity.getStartDate().isEqual(filter.getStartDateTo()))
-                 .collect(Collectors.toList());
+        if (filter.getStartDateFrom()!= null) {
+            meetings = meetings.stream()
+                   .filter(meeting -> meeting.startDate().isAfter(filter.getStartDateFrom()) || meeting.startDate().isEqual(filter.getStartDateFrom()))
+                   .collect(Collectors.toList());
         }
-        
-        return meetingEntities;
+        if (filter.getStartDateTo()!= null) {
+            meetings = meetings.stream()
+                   .filter(meeting -> meeting.startDate().isBefore(filter.getStartDateTo()) || meeting.startDate().isEqual(filter.getStartDateTo()))
+                   .collect(Collectors.toList());
+        }
+        if (filter.getAttendeesFrom()!= null) {
+            meetings = meetings.stream()
+                   .filter(meeting -> meeting.getAttendees().size() >= filter.getAttendeesFrom())
+                   .collect(Collectors.toList());
+        }
+        if (filter.getAttendeesTo()!= null) {
+            meetings = meetings.stream()
+                   .filter(meeting -> meeting.getAttendees().size() <= filter.getAttendeesTo())
+                   .collect(Collectors.toList());
+        }
+        return meetings;
     }
 }

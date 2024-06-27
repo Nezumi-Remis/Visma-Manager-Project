@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,9 +31,11 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/meetings")
 public class MeetingController {
     private final MeetingRepository meetingRepository;
+    private final UserRepository userRepository;
 
-    public MeetingController(MeetingRepository meetingRepository) {
+    public MeetingController(MeetingRepository meetingRepository, UserRepository userRepository) {
         this.meetingRepository = meetingRepository;
+        this.userRepository = userRepository;
     }
 
     @GetMapping
@@ -68,47 +69,40 @@ public class MeetingController {
     public void delete(@PathVariable String name) {
         meetingRepository.delete(name);
     }
-
-    @Autowired
-    private UserRepository userRepository;
     
     @PostMapping("/{name}/attendees")
     public void addAttendee(@PathVariable String name, @RequestBody UserEntity attendee) {
-        Optional<Meeting> meetingOptional = meetingRepository.findByName(URLDecoder.decode(name, StandardCharsets.UTF_8));
-        if (meetingOptional.isEmpty()) {
+        Meeting meeting = findByName(name);
+        if (meeting!= null) {
+            MeetingEntity meetingEntity = MeetingEntity.fromMeeting(meeting, userRepository);
+            MeetingAttendeeEntity meetingAttendee = new MeetingAttendeeEntity(attendee);
+            meetingAttendee.setMeeting(meetingEntity);
+            meetingAttendee.setAddedAt(Timestamp.valueOf(LocalDateTime.now()));
+            
+            // Save the meetingAttendee to the database to generate the ID
+            meetingRepository.saveMeetingAttendee(meetingAttendee);
+            
+            // Update the meeting attendees
+            meeting.getAttendees().add(meetingAttendee);
+            meetingRepository.updateMeetingEntity(MeetingEntity.fromMeeting(meeting, userRepository));
+        } else {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Meeting not found");
         }
-        Meeting meeting = meetingOptional.get();
-        MeetingEntity meetingEntity = new MeetingEntity(meeting);
-        MeetingAttendeeEntity meetingAttendee = new MeetingAttendeeEntity();
-        meetingAttendee.setMeeting(meetingEntity);
-        meetingAttendee.setAttendee(attendee);
-        meetingAttendee.setAddedAt(Timestamp.valueOf(LocalDateTime.now()));
-        userRepository.saveMeetingAttendee(meetingAttendee); // Save the meeting attendee
-
-        // Update the Meeting object in the meetings list
-        List<MeetingAttendeeEntity> attendees = meetingEntity.getAttendees();
-        if (attendees == null) {
-            attendees = new ArrayList<>();
-            meetingEntity.setAttendees(attendees);
-        }
-        attendees.add(meetingAttendee);
-        meetingRepository.updateMeetingAttendees(meetingEntity);
     }
 
-    @GetMapping("/{name}/attendees")
-    public List<UserEntity> getAttendees(@PathVariable String name) {
-        Optional<Meeting> meetingOptional = meetingRepository.findByName(URLDecoder.decode(name, StandardCharsets.UTF_8));
-        if (meetingOptional.isEmpty()) {
+    @GetMapping("/{name}/attendees/list")
+    public List<UserEntity> getMeetingAttendees(@PathVariable String name) {
+        Meeting meeting = findByName(name);
+        if (meeting!= null) {
+            MeetingEntity meetingEntity = MeetingEntity.fromMeeting(meeting, userRepository);
+            List<MeetingAttendeeEntity> meetingAttendees = meetingRepository.findMeetingAttendeesByMeeting(meetingEntity);
+            List<UserEntity> attendees = new ArrayList<>();
+            for (MeetingAttendeeEntity meetingAttendee : meetingAttendees) {
+                attendees.add(meetingAttendee.getAttendee());
+            }
+            return attendees;
+        } else {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Meeting not found");
         }
-        Meeting meeting = meetingOptional.get();
-        MeetingEntity meetingEntity = new MeetingEntity(meeting);
-        List<MeetingAttendeeEntity> meetingAttendees = meetingRepository.findMeetingAttendeesByMeeting(meetingEntity);
-        List<UserEntity> attendees = new ArrayList<>();
-        for (MeetingAttendeeEntity meetingAttendee : meetingAttendees) {
-            attendees.add(meetingAttendee.getAttendee());
-        }
-        return attendees;
     }
 }

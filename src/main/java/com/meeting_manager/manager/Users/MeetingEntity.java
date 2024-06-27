@@ -1,17 +1,18 @@
 package com.meeting_manager.manager.users;
 
+import java.time.LocalDate;
+import java.util.List;
+
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
-import javax.persistence.CascadeType;
-import java.time.LocalDate;
-import java.util.List;
 
 import com.meeting_manager.manager.meeting.Meeting;
 import com.meeting_manager.manager.meeting.MeetingCategory;
@@ -38,16 +39,17 @@ public class MeetingEntity {
 
     public MeetingEntity() {}
 
-    public MeetingEntity(Meeting meeting) {
-        this.name = meeting.name();
-        this.description = meeting.description();
-        this.category = meeting.category();
-        this.type = meeting.type();
-        this.startDate = meeting.startDate();
-        this.endDate = meeting.endDate();
-        // You need to convert the responsible person's name to a UserEntity
-        // For example, you could have a UserRepository to find the user by name
-        // this.responsiblePerson = userRepository.findByName(meeting.responsiblePerson());
+    public static MeetingEntity fromMeeting(Meeting meeting, UserRepository userRepository) {
+        MeetingEntity meetingEntity = new MeetingEntity();
+        meetingEntity.name = meeting.name();
+        meetingEntity.description = meeting.description();
+        meetingEntity.category = meeting.category();
+        meetingEntity.type = meeting.type();
+        meetingEntity.startDate = meeting.startDate();
+        meetingEntity.endDate = meeting.endDate();
+        meetingEntity.responsiblePerson = userRepository.findByName(meeting.responsiblePerson()).orElse(new UserEntity());
+        meetingEntity.attendees = meeting.attendees(); // Initialize attendees list
+        return meetingEntity;
     }
 
     public Long getId() {

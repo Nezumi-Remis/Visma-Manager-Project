@@ -13,6 +13,10 @@ public class UserEntity {
     private String name;
     private String email;
 
+    public UserEntity() {
+        //TODO Auto-generated constructor stub
+    }
+
     public Long getId() {
         return id;
     }

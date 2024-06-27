@@ -1,16 +1,20 @@
 package com.meeting_manager.manager.users;
 
+import java.sql.Timestamp;
+
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.Column;
-import java.sql.Timestamp;
 
 @Entity
 public class MeetingAttendeeEntity {
+
+    public MeetingAttendeeEntity(UserEntity attendee1) {
+    }
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -22,6 +26,15 @@ public class MeetingAttendeeEntity {
     private UserEntity attendee;
     @Column(nullable = false, updatable = false)
     private Timestamp addedAt;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private UserEntity user;
+
+    public UserEntity getUser() {
+        return user;
+    }
+    
 
     public Long getId() {
         return id;
